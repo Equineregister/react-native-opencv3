@@ -103,5 +103,62 @@
     resolve(returnDict);
 }
 
++ (void)demoOpencvMethod:(MatWrapper*)inputMatWrapper outPath:(NSString*)outPath resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject {
+    Mat inputMat = inputMatWrapper.myMat;
+    Mat backup = inputMatWrapper.myMat;
+    
+    cv::Mat imgOriginal;        // input image
+    cv::Mat imgGrayscale;        // grayscale of input image
+    cv::Mat imgBlurred;            // intermediate blured image
+    cv::Mat imgCanny;            // Canny edge image
+    cv::Mat bitwiseOrMat;
+
+    cv::Point p1(0,0), p2(600,600);
+    cv::Scalar colorLine(0,255,0);
+
+    cv::cvtColor(inputMat, imgGrayscale, CV_BGR2GRAY);
+
+    cv::GaussianBlur(imgGrayscale,            // input image
+        imgBlurred,                            // output image
+        cv::Size(5, 5),                        // smoothing window width and height in pixels
+        1.5);                                // sigma value, determines how much the image will be blurred
+
+    cv::Canny(imgBlurred,            // input image
+        imgCanny,                    // output image
+        50,                        // low threshold
+        120);                        // high threshold
+
+    std::vector<std::vector<cv::Point>> contours;
+    std::vector<Vec4i> hierarchy;
+    findContours(imgCanny, contours, hierarchy, RETR_TREE, CHAIN_APPROX_NONE);
+    drawContours(backup, contours, -1, Scalar(0, 255, 0), 3);
+
+
+    UIImage *destImage = MatToUIImage(backup);
+    if (destImage == nil) {
+        return reject(@"ENOENT", [NSString stringWithFormat:@"ENOENT: no such file, open '%@'", destImage], nil);
+    }
+    
+    NSString *fileType = [[outPath lowercaseString] pathExtension];
+    if ([fileType isEqualToString:@"png"]) {
+        [UIImagePNGRepresentation(destImage) writeToFile:outPath atomically:YES];
+    }
+    else if ([fileType isEqualToString:@"jpg"] || [fileType isEqualToString:@"jpeg"]) {
+        [UIImageJPEGRepresentation(destImage, 80) writeToFile:outPath atomically:YES];
+        //UIImageWriteToSavedPhotosAlbum(destImage, self, nil, nil);
+    }
+    else {
+        return reject(@"EINVAL", [NSString stringWithFormat:@"EINVAL: unsupported file type, write '%@'", fileType], nil);
+    }
+    
+    NSNumber *wid = [NSNumber numberWithInt:(int)destImage.size.width];
+    NSNumber *hei = [NSNumber numberWithInt:(int)destImage.size.height];
+    
+    NSDictionary *returnDict = @{ @"width" : wid, @"height" : hei,
+                                  @"uri" : outPath };
+    
+    resolve(returnDict);
+}
+
 @end
 

@@ -38,6 +38,18 @@ RCT_EXPORT_METHOD(matToImage:(NSDictionary*)src outPath:(NSString*)outPath resol
     [FileUtils matToImage:inputMatWrapper outPath:outPath resolver:resolve rejecter:reject];
 }
 
+RCT_EXPORT_METHOD(demoOpencvMethod:(NSDictionary*)src outPath:(NSString*)outPath resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject) {
+    if (outPath == nil || outPath == (NSString*)NSNull.null || [outPath isEqualToString:@""]) {
+        return reject(@"EINVAL", [NSString stringWithFormat:@"EINVAL: invalid parameter, param '%@'", outPath], nil);
+    }
+    
+    NSNumber *srcMatNum = [src valueForKey:@"matIndex"];
+    int matIndex = (int)[srcMatNum integerValue];
+    
+    MatWrapper *inputMatWrapper = [((MatManager*)MatManager.sharedMgr).mats objectAtIndex:matIndex];
+    [FileUtils demoOpencvMethod:inputMatWrapper outPath:outPath resolver:resolve rejecter:reject];
+}
+
 RCT_EXPORT_METHOD(cvtColor:(NSDictionary*)src dstMat:(NSDictionary*)dst convColorCode:(int)convColorCode) {
 
     NSNumber *srcMatNum = [src valueForKey:@"matIndex"];
