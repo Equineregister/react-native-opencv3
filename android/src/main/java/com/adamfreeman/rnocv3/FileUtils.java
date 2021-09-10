@@ -8,14 +8,22 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 
 import org.opencv.android.Utils;
+import org.opencv.imgproc.Imgproc;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.Size;
+import org.opencv.core.Core;
+import org.opencv.core.Scalar;
+import org.opencv.core.Point;
+import org.opencv.core.MatOfPoint;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.FileNotFoundException;
 import android.util.Log;
+import java.util.ArrayList;
+import java.util.List;
 
 class FileUtils {
 
@@ -100,6 +108,80 @@ class FileUtils {
             }
 
             Bitmap bm = Bitmap.createBitmap(mat.cols(), mat.rows(), Bitmap.Config.ARGB_8888);
+            Utils.matToBitmap(mat, bm);
+
+            int width = bm.getWidth();
+            int height = bm.getHeight();
+
+            FileOutputStream file = new FileOutputStream(outPath);
+
+            if (file != null) {
+                String fileType = "";
+                int i = outPath.lastIndexOf('.');
+                if (i > 0) {
+                    fileType = outPath.substring(i+1).toLowerCase();
+                }
+                else {
+                    rejectInvalidParam(promise, outPath);
+                    file.close();
+                    return;
+                }
+
+                if (fileType.equals("png")) {
+                    bm.compress(Bitmap.CompressFormat.PNG, 100, file);
+                }
+                else if (fileType.equals("jpg") || fileType.equals("jpeg")) {
+                    bm.compress(Bitmap.CompressFormat.JPEG, 80, file);
+                }
+                else {
+                    rejectInvalidParam(promise, outPath);
+                    file.close();
+                    return;
+                }
+                file.close();
+            }
+            else {
+                rejectFileNotFound(promise, outPath);
+                return;
+            }
+
+            WritableNativeMap result = new WritableNativeMap();
+            result.putInt("width", width);
+            result.putInt("height", height);
+            result.putString("uri", outPath);
+            promise.resolve(result);
+        }
+        catch (Exception ex) {
+            reject(promise, "EGENERIC", ex);
+        }
+    }
+
+    public static void demoOpencvMethod(final Mat mat, final String outPath, final Promise promise) {
+        try {
+            if (outPath == null || outPath.length() == 0) {
+                // TODO: if no path sent in then auto-generate??!!!?
+                rejectInvalidParam(promise, outPath);
+                return;
+            }
+            Mat backup = mat.clone();
+
+            Imgproc.cvtColor(backup,backup,Imgproc.COLOR_RGB2GRAY);
+            Imgproc.GaussianBlur(backup, backup, new Size(9, 9), 0);
+
+            Mat detectedEdges = backup;
+            Imgproc.Canny(backup, detectedEdges, 50, 120, 3, false);
+
+            List<MatOfPoint> contours = new ArrayList<>();
+            Mat hierarchy = new Mat();
+            Imgproc.findContours(detectedEdges, contours, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
+
+            for (int i = 0; i < contours.size(); i++) {
+                Scalar color = new Scalar(0, 0, 255);
+                Imgproc.drawContours(mat, contours, i, color, 4, Core.LINE_8, hierarchy, 0, new Point());
+            }
+
+            Bitmap bm = Bitmap.createBitmap(mat.cols(), mat.rows(), Bitmap.Config.ARGB_8888);
+            
             Utils.matToBitmap(mat, bm);
 
             int width = bm.getWidth();

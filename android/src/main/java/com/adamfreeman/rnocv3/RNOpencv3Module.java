@@ -100,6 +100,13 @@ public class RNOpencv3Module extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
+    public void demoOpencvMethod(ReadableMap srcMat, String outPath, final Promise promise) {
+        int matIndex = srcMat.getInt("matIndex");
+        Mat mat = (Mat)MatManager.getInstance().matAtIndex(matIndex);
+		FileUtils.getInstance().demoOpencvMethod(mat, outPath, promise);
+    }
+
+    @ReactMethod
     public void invokeMethods(ReadableMap cvInvokeMap) {
         CvInvoke invoker = new CvInvoke();
         WritableArray responseArr = invoker.parseInvokeMap(cvInvokeMap);
