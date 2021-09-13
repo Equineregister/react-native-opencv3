@@ -177,7 +177,7 @@ class FileUtils {
 
             for (int i = 0; i < contours.size(); i++) {
                 Scalar color = new Scalar(0, 0, 255);
-                Imgproc.drawContours(mat, contours, i, color, 4, Core.LINE_8, hierarchy, 0, new Point());
+                Imgproc.drawContours(mat, contours, i, color, 4, Imgproc.LINE_8, hierarchy, 0, new Point());
             }
 
             Bitmap bm = Bitmap.createBitmap(mat.cols(), mat.rows(), Bitmap.Config.ARGB_8888);
