@@ -40,7 +40,7 @@ public class RNOpencv3Module extends ReactContextBaseJavaModule {
     private static final String TAG = RNOpencv3Module.class.getSimpleName();
 
     static {
-        System.loadLibrary("opencv_java3");
+        System.loadLibrary("opencv_java4");
     }
 
     private ReactApplicationContext reactContext;
