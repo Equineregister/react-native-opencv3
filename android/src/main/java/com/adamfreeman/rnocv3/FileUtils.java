@@ -277,4 +277,34 @@ class FileUtils {
             reject(promise, "EGENERIC", ex);
         }
     }
+
+    public static void ROCombain(final String firstImage, final String secondImage,final String outPath, final Promise promise) {
+        try {
+
+            Bitmap firstImageBitmap = BitmapFactory.decodeFile(firstImage);
+            Bitmap secondImageBitmap = BitmapFactory.decodeFile(secondImage);
+            Bitmap scaledSecondImage = Bitmap.createScaledBitmap(secondImageBitmap, 100, 300, true);
+
+            Bitmap bmOverlay = Bitmap.createBitmap(firstImageBitmap.getWidth(), firstImageBitmap.getHeight(), firstImageBitmap.getConfig());
+            Canvas canvas = new Canvas(bmOverlay);
+            float xOffset = (firstImageBitmap.getWidth() / 2) - (scaledSecondImage.getWidth() / 2);
+            float yOffset = (firstImageBitmap.getHeight() / 2) - (scaledSecondImage.getHeight() / 2);
+            canvas.drawBitmap(firstImageBitmap, new Matrix(), null);
+            canvas.drawBitmap(scaledSecondImage, xOffset, yOffset, null);
+            firstImageBitmap.recycle();
+            secondImageBitmap.recycle();
+            scaledSecondImage.recycle();
+
+            FileOutputStream file = new FileOutputStream(outPath);
+            bmOverlay.compress(Bitmap.CompressFormat.JPEG, 100, file);
+
+            WritableNativeMap result = new WritableNativeMap();
+            result.putString("uri", outPath);
+            promise.resolve(result);
+
+        }
+        catch (Exception ex) {
+            reject(promise, "EGENERIC", ex);
+        }
+    }
 }
