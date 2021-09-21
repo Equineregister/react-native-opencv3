@@ -17,10 +17,15 @@ import org.opencv.core.Scalar;
 import org.opencv.core.Point;
 import org.opencv.core.MatOfPoint;
 
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.FileNotFoundException;
+
+import android.graphics.Canvas;
+import android.graphics.Matrix;
 import android.util.Log;
 import java.util.ArrayList;
 import java.util.List;
@@ -156,7 +161,7 @@ class FileUtils {
         }
     }
 
-    public static void demoOpencvMethod(final Mat mat, final String outPath, final Promise promise) {
+    public static void demoOpencvMethod(final Mat mat, final String outPath, final String cannyPath, final Promise promise) {
         try {
             if (outPath == null || outPath.length() == 0) {
                 // TODO: if no path sent in then auto-generate??!!!?
@@ -171,6 +176,13 @@ class FileUtils {
             Mat detectedEdges = backup;
             Imgproc.Canny(backup, detectedEdges, 50, 120, 3, false);
 
+            // save canny image *
+            Mat cannyMat = backup.clone();
+            Imgproc.threshold(cannyMat, cannyMat, 1, 255, Imgproc.THRESH_BINARY_INV);
+            Bitmap cannyBm = Bitmap.createBitmap(mat.cols(), mat.rows(), Bitmap.Config.ARGB_8888);
+            Utils.matToBitmap(cannyMat, cannyBm);
+            // end *
+
             List<MatOfPoint> contours = new ArrayList<>();
             Mat hierarchy = new Mat();
             Imgproc.findContours(detectedEdges, contours, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
@@ -181,13 +193,15 @@ class FileUtils {
             }
 
             Bitmap bm = Bitmap.createBitmap(mat.cols(), mat.rows(), Bitmap.Config.ARGB_8888);
-            
+
             Utils.matToBitmap(mat, bm);
 
             int width = bm.getWidth();
             int height = bm.getHeight();
 
             FileOutputStream file = new FileOutputStream(outPath);
+            // write canny image to fs
+            FileOutputStream cannyFile = new FileOutputStream(cannyPath);
 
             if (file != null) {
                 String fileType = "";
@@ -198,30 +212,64 @@ class FileUtils {
                 else {
                     rejectInvalidParam(promise, outPath);
                     file.close();
+                    cannyFile.close();
                     return;
                 }
 
                 if (fileType.equals("png")) {
                     bm.compress(Bitmap.CompressFormat.PNG, 100, file);
+                    cannyBm.compress(Bitmap.CompressFormat.PNG, 100, cannyFile);
                 }
                 else if (fileType.equals("jpg") || fileType.equals("jpeg")) {
                     bm.compress(Bitmap.CompressFormat.JPEG, 80, file);
+                    cannyBm.compress(Bitmap.CompressFormat.JPEG, 80, cannyFile);
                 }
                 else {
                     rejectInvalidParam(promise, outPath);
                     file.close();
+                    cannyFile.close();
                     return;
                 }
                 file.close();
+                cannyFile.close();
             }
             else {
                 rejectFileNotFound(promise, outPath);
                 return;
             }
-
             WritableNativeMap result = new WritableNativeMap();
             result.putInt("width", width);
             result.putInt("height", height);
+            result.putString("uri", outPath);
+            result.putString("cannyUri", cannyPath);
+            // cannyMat putArray
+            promise.resolve(result);
+        }
+        catch (Exception ex) {
+            reject(promise, "EGENERIC", ex);
+        }
+    }
+
+    public static void ROCrop(final String imagePath,
+        final String outPath,
+        final int x,
+        final int y,
+        final int width,
+        final int height,
+        final Promise promise) {
+        try {
+            if (outPath == null || outPath.length() == 0) {
+                // TODO: if no path sent in then auto-generate??!!!?
+                rejectInvalidParam(promise, outPath);
+                return;
+            }
+
+            Bitmap bitmapImage = BitmapFactory.decodeFile(imagePath);
+            Bitmap crop = Bitmap.createBitmap(bitmapImage, x, y, width, height);
+            FileOutputStream file = new FileOutputStream(outPath);
+            crop.compress(Bitmap.CompressFormat.JPEG, 100, file);
+
+            WritableNativeMap result = new WritableNativeMap();
             result.putString("uri", outPath);
             promise.resolve(result);
         }
