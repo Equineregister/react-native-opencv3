@@ -112,6 +112,17 @@ public class RNOpencv3Module extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
+    public void ROCrop(final String imagePath,
+        final String outPath,
+        final int x,
+        final int y,
+        final int width,
+        final int height,
+        final Promise promise) {
+		FileUtils.getInstance().ROCrop(imagePath, outPath, x, y, width, height, promise);
+    }
+
+    @ReactMethod
     public void invokeMethods(ReadableMap cvInvokeMap) {
         CvInvoke invoker = new CvInvoke();
         WritableArray responseArr = invoker.parseInvokeMap(cvInvokeMap);
