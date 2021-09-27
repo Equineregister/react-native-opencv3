@@ -189,7 +189,7 @@ class FileUtils {
 
             for (int i = 0; i < contours.size(); i++) {
                 Scalar color = new Scalar(0, 0, 255);
-                Imgproc.drawContours(mat, contours, i, color, 4, Imgproc.LINE_8, hierarchy, 0, new Point());
+                Imgproc.drawContours(mat, contours, i, color, 40, Imgproc.LINE_8, hierarchy, 0, new Point());
             }
 
             Bitmap bm = Bitmap.createBitmap(mat.cols(), mat.rows(), Bitmap.Config.ARGB_8888);
@@ -283,7 +283,7 @@ class FileUtils {
 
             Bitmap firstImageBitmap = BitmapFactory.decodeFile(firstImage);
             Bitmap secondImageBitmap = BitmapFactory.decodeFile(secondImage);
-            Bitmap scaledSecondImage = Bitmap.createScaledBitmap(secondImageBitmap, 100, 300, true);
+            Bitmap scaledSecondImage = Bitmap.createScaledBitmap(secondImageBitmap, 130, 400, true);
 
             Bitmap bmOverlay = Bitmap.createBitmap(firstImageBitmap.getWidth(), firstImageBitmap.getHeight(), firstImageBitmap.getConfig());
             Canvas canvas = new Canvas(bmOverlay);
