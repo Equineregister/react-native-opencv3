@@ -25,7 +25,9 @@ import java.io.IOException;
 import java.io.FileNotFoundException;
 
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Matrix;
+import android.graphics.Paint;
 import android.util.Log;
 import java.util.ArrayList;
 import java.util.List;
@@ -189,7 +191,7 @@ class FileUtils {
 
             for (int i = 0; i < contours.size(); i++) {
                 Scalar color = new Scalar(0, 0, 255);
-                Imgproc.drawContours(mat, contours, i, color, 40, Imgproc.LINE_8, hierarchy, 0, new Point());
+                Imgproc.drawContours(mat, contours, i, color, 10, Imgproc.LINE_8, hierarchy, 0, new Point());
             }
 
             Bitmap bm = Bitmap.createBitmap(mat.cols(), mat.rows(), Bitmap.Config.ARGB_8888);
@@ -283,14 +285,15 @@ class FileUtils {
 
             Bitmap firstImageBitmap = BitmapFactory.decodeFile(firstImage);
             Bitmap secondImageBitmap = BitmapFactory.decodeFile(secondImage);
-            Bitmap scaledSecondImage = Bitmap.createScaledBitmap(secondImageBitmap, 130, 400, true);
+            Bitmap scaledSecondImage = Bitmap.createScaledBitmap(secondImageBitmap, 170, 510, true);
 
             Bitmap bmOverlay = Bitmap.createBitmap(firstImageBitmap.getWidth(), firstImageBitmap.getHeight(), firstImageBitmap.getConfig());
             Canvas canvas = new Canvas(bmOverlay);
+            canvas.drawColor(0xffffffff);
             float xOffset = (firstImageBitmap.getWidth() / 2) - (scaledSecondImage.getWidth() / 2);
-            float yOffset = (firstImageBitmap.getHeight() / 2) - (scaledSecondImage.getHeight() / 2);
-            canvas.drawBitmap(firstImageBitmap, new Matrix(), null);
+            float yOffset = (float) ((firstImageBitmap.getHeight() / 2) - (scaledSecondImage.getHeight() / 2.5));
             canvas.drawBitmap(scaledSecondImage, xOffset, yOffset, null);
+            canvas.drawBitmap(firstImageBitmap, 0, 0, null);
             firstImageBitmap.recycle();
             secondImageBitmap.recycle();
             scaledSecondImage.recycle();
