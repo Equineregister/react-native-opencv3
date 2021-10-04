@@ -163,7 +163,7 @@ class FileUtils {
         }
     }
 
-    public static void demoOpencvMethod(final Mat mat, final String outPath, final String cannyPath, final Promise promise) {
+    public static void demoOpencvMethod(final Mat mat, final String outPath, final String cannyPath,final int gaussian,final int min,final int max, final Promise promise) {
         try {
             if (outPath == null || outPath.length() == 0) {
                 // TODO: if no path sent in then auto-generate??!!!?
@@ -173,10 +173,10 @@ class FileUtils {
             Mat backup = mat.clone();
 
             Imgproc.cvtColor(backup,backup,Imgproc.COLOR_RGB2GRAY);
-            Imgproc.GaussianBlur(backup, backup, new Size(9, 9), 0);
+            Imgproc.GaussianBlur(backup, backup, new Size(gaussian, gaussian), 0);
 
             Mat detectedEdges = backup;
-            Imgproc.Canny(backup, detectedEdges, 50, 120, 3, false);
+            Imgproc.Canny(backup, detectedEdges, min, max, 3, false);
 
             // save canny image *
             Mat cannyMat = backup.clone();
@@ -187,11 +187,11 @@ class FileUtils {
 
             List<MatOfPoint> contours = new ArrayList<>();
             Mat hierarchy = new Mat();
-            Imgproc.findContours(detectedEdges, contours, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
+            Imgproc.findContours(detectedEdges, contours, hierarchy, Imgproc.RETR_CCOMP, Imgproc.CHAIN_APPROX_SIMPLE);
 
             for (int i = 0; i < contours.size(); i++) {
-                Scalar color = new Scalar(0, 0, 255);
-                Imgproc.drawContours(mat, contours, i, color, 10, Imgproc.LINE_8, hierarchy, 0, new Point());
+                Scalar color = new Scalar(0, 255, 0);
+                Imgproc.drawContours(mat, contours, i, color, -1, Imgproc.LINE_8, hierarchy, 0, new Point());
             }
 
             Bitmap bm = Bitmap.createBitmap(mat.cols(), mat.rows(), Bitmap.Config.ARGB_8888);
