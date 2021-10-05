@@ -107,6 +107,22 @@ public class RNOpencv3Module extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
+    public void ROGaussianBlur(ReadableMap srcMat, String outPath, final int gaussian, final Promise promise) {
+        int matIndex = srcMat.getInt("matIndex");
+        Mat mat = (Mat)MatManager.getInstance().matAtIndex(matIndex);
+		FileUtils.getInstance().ROGaussianBlur(mat, outPath, gaussian, promise);
+    }
+    
+    @ReactMethod
+    public void ROCanny(ReadableMap originalSrcMat, ReadableMap bluredSrcMat, String outPath, final String cannyPath, final int min, final int max, final Promise promise) {
+        int matIndex = originalSrcMat.getInt("matIndex");
+        Mat originalMat = (Mat)MatManager.getInstance().matAtIndex(matIndex);
+        int matIndex2 = bluredSrcMat.getInt("matIndex");
+        Mat bluredMat = (Mat)MatManager.getInstance().matAtIndex(matIndex2);
+		FileUtils.getInstance().ROCanny(originalMat, bluredMat, outPath, cannyPath, min, max, promise);
+    }
+
+    @ReactMethod
     public void ROCombain(final String firstImage, final String secondImage,final String outPath, final Promise promise) {
 		FileUtils.getInstance().ROCombain(firstImage, secondImage, outPath, promise);
     }

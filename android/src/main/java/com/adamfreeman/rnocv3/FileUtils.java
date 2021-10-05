@@ -163,6 +163,154 @@ class FileUtils {
         }
     }
 
+    public static void ROGaussianBlur(final Mat mat, final String outPath,final int gaussian, final Promise promise) {
+        try {
+            if (outPath == null || outPath.length() == 0) {
+                // TODO: if no path sent in then auto-generate??!!!?
+                rejectInvalidParam(promise, outPath);
+                return;
+            }
+            // Mat backup = mat.clone();
+
+            Imgproc.cvtColor(mat,mat,Imgproc.COLOR_RGB2GRAY);
+            Imgproc.GaussianBlur(mat, mat, new Size(gaussian, gaussian), 0);
+
+
+            Bitmap bm = Bitmap.createBitmap(mat.cols(), mat.rows(), Bitmap.Config.ARGB_8888);
+
+            Utils.matToBitmap(mat, bm);
+
+            int width = bm.getWidth();
+            int height = bm.getHeight();
+
+            FileOutputStream file = new FileOutputStream(outPath);
+
+            if (file != null) {
+                String fileType = "";
+                int i = outPath.lastIndexOf('.');
+                if (i > 0) {
+                    fileType = outPath.substring(i+1).toLowerCase();
+                }
+                else {
+                    rejectInvalidParam(promise, outPath);
+                    file.close();
+                    return;
+                }
+
+                if (fileType.equals("png")) {
+                    bm.compress(Bitmap.CompressFormat.PNG, 100, file);
+                }
+                else if (fileType.equals("jpg") || fileType.equals("jpeg")) {
+                    bm.compress(Bitmap.CompressFormat.JPEG, 80, file);
+                }
+                else {
+                    rejectInvalidParam(promise, outPath);
+                    file.close();
+                    return;
+                }
+                file.close();
+            }
+            else {
+                rejectFileNotFound(promise, outPath);
+                return;
+            }
+            WritableNativeMap result = new WritableNativeMap();
+            result.putInt("width", width);
+            result.putInt("height", height);
+            result.putString("uri", outPath);
+            promise.resolve(result);
+        }
+        catch (Exception ex) {
+            reject(promise, "EGENERIC", ex);
+        }
+    }
+
+    public static void ROCanny(final Mat originalImage, final Mat bluredImage, final String outPath, final String cannyPath, final int min, final int max, final Promise promise) {
+        try {
+            if (outPath == null || outPath.length() == 0) {
+                // TODO: if no path sent in then auto-generate??!!!?
+                rejectInvalidParam(promise, outPath);
+                return;
+            }
+            Mat backup = bluredImage.clone();
+
+             Mat detectedEdges = backup.clone();
+            Imgproc.Canny(backup, detectedEdges, min, max, 3, false);
+
+            // save canny image *
+            Mat cannyMat = detectedEdges.clone();
+            Imgproc.threshold(cannyMat, cannyMat, 1, 255, Imgproc.THRESH_BINARY_INV);
+            Bitmap cannyBm = Bitmap.createBitmap(bluredImage.cols(), bluredImage.rows(), Bitmap.Config.ARGB_8888);
+            Utils.matToBitmap(cannyMat, cannyBm);
+            // end *
+
+            List<MatOfPoint> contours = new ArrayList<>();
+            Mat hierarchy = new Mat();
+            Imgproc.findContours(detectedEdges, contours, hierarchy, Imgproc.RETR_CCOMP, Imgproc.CHAIN_APPROX_SIMPLE);
+
+            for (int i = 0; i < contours.size(); i++) {
+                Scalar color = new Scalar(0, 255, 0);
+                Imgproc.drawContours(originalImage, contours, i, color, 40, Imgproc.LINE_8, hierarchy, 0, new Point());
+            }
+
+            Bitmap bm = Bitmap.createBitmap(bluredImage.cols(), bluredImage.rows(), Bitmap.Config.ARGB_8888);
+
+            Utils.matToBitmap(originalImage, bm);
+
+            int width = bm.getWidth();
+            int height = bm.getHeight();
+
+            FileOutputStream file = new FileOutputStream(outPath);
+            // write canny image to fs
+            FileOutputStream cannyFile = new FileOutputStream(cannyPath);
+
+            if (file != null) {
+                String fileType = "";
+                int i = outPath.lastIndexOf('.');
+                if (i > 0) {
+                    fileType = outPath.substring(i+1).toLowerCase();
+                }
+                else {
+                    rejectInvalidParam(promise, outPath);
+                    file.close();
+                    cannyFile.close();
+                    return;
+                }
+
+                if (fileType.equals("png")) {
+                    bm.compress(Bitmap.CompressFormat.PNG, 100, file);
+                    cannyBm.compress(Bitmap.CompressFormat.PNG, 100, cannyFile);
+                }
+                else if (fileType.equals("jpg") || fileType.equals("jpeg")) {
+                    bm.compress(Bitmap.CompressFormat.JPEG, 80, file);
+                    cannyBm.compress(Bitmap.CompressFormat.JPEG, 80, cannyFile);
+                }
+                else {
+                    rejectInvalidParam(promise, outPath);
+                    file.close();
+                    cannyFile.close();
+                    return;
+                }
+                file.close();
+                cannyFile.close();
+            }
+            else {
+                rejectFileNotFound(promise, outPath);
+                return;
+            }
+            WritableNativeMap result = new WritableNativeMap();
+            result.putInt("width", width);
+            result.putInt("height", height);
+            result.putString("uri", outPath);
+            result.putString("cannyUri", cannyPath);
+            // cannyMat putArray
+            promise.resolve(result);
+        }
+        catch (Exception ex) {
+            reject(promise, "EGENERIC", ex);
+        }
+    }
+
     public static void demoOpencvMethod(final Mat mat, final String outPath, final String cannyPath,final int gaussian,final int min,final int max, final Promise promise) {
         try {
             if (outPath == null || outPath.length() == 0) {
@@ -191,7 +339,7 @@ class FileUtils {
 
             for (int i = 0; i < contours.size(); i++) {
                 Scalar color = new Scalar(0, 255, 0);
-                Imgproc.drawContours(mat, contours, i, color, -1, Imgproc.LINE_8, hierarchy, 0, new Point());
+                Imgproc.drawContours(mat, contours, i, color, 40, Imgproc.LINE_8, hierarchy, 0, new Point());
             }
 
             Bitmap bm = Bitmap.createBitmap(mat.cols(), mat.rows(), Bitmap.Config.ARGB_8888);
