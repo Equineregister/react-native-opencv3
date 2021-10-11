@@ -206,5 +206,54 @@
     resolve(returnDict);
 }
 
++ (void)ROCanny:(MatWrapper*)originalImage bluredImage:(MatWrapper*)bluredImage outPath:(NSString*)outPath cannyPath:(NSString*)cannyPath min:(int)min max:(int)max resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject {
+    Mat inputMat = inputMatWrapper.myMat;
+
+    cv::Mat imgCanny;            // Canny edge image
+
+    cv::Point p1(0,0), p2(600,600);
+    cv::Scalar colorLine(0,255,0);
+
+    cv::Canny(bluredImage,            // input image
+        imgCanny,                    // output image
+        min,                        // low threshold
+        max);                        // high threshold
+
+    std::vector<std::vector<cv::Point>> contours;
+    std::vector<Vec4i> hierarchy;
+    findContours(imgCanny, contours, hierarchy, RETR_TREE, CHAIN_APPROX_NONE);
+    drawContours(originalImage, contours, -1, Scalar(0, 255, 0), 3);
+
+    threshold(imgCanny,imgCanny, 1, 255, THRESH_BINARY_INV);
+
+    UIImage *destImage = MatToUIImage(originalImage);
+    UIImage *destCannyImage = MatToUIImage(imgCanny);
+    if (destImage == nil) {
+        return reject(@"ENOENT", [NSString stringWithFormat:@"ENOENT: no such file, open '%@'", destImage], nil);
+    }
+    
+    NSString *fileType = [[outPath lowercaseString] pathExtension];
+    if ([fileType isEqualToString:@"png"]) {
+        [UIImagePNGRepresentation(destImage) writeToFile:outPath atomically:YES];
+        [UIImagePNGRepresentation(destCannyImage) writeToFile:cannyPath atomically:YES];
+    }
+    else if ([fileType isEqualToString:@"jpg"] || [fileType isEqualToString:@"jpeg"]) {
+        [UIImageJPEGRepresentation(destImage, 80) writeToFile:outPath atomically:YES];
+        [UIImageJPEGRepresentation(destCannyImage, 80) writeToFile:cannyPath atomically:YES];
+        //UIImageWriteToSavedPhotosAlbum(destImage, self, nil, nil);
+    }
+    else {
+        return reject(@"EINVAL", [NSString stringWithFormat:@"EINVAL: unsupported file type, write '%@'", fileType], nil);
+    }
+    
+    NSNumber *wid = [NSNumber numberWithInt:(int)destImage.size.width];
+    NSNumber *hei = [NSNumber numberWithInt:(int)destImage.size.height];
+    
+    NSDictionary *returnDict = @{ @"width" : wid, @"height" : hei,
+                                  @"uri" : outPath, @"cannyUri" : cannyPath };
+    
+    resolve(returnDict);
+}
+
 @end
 
