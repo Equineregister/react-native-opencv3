@@ -160,5 +160,51 @@
     resolve(returnDict);
 }
 
++ (void)ROGaussianBlur:(MatWrapper*)inputMat outPath:(NSString*)outPath gaussian:(int)gaussian resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject {
+    Mat imageMat = inputMat.myMat;
+    Mat backup = inputMat.myMat;
+    
+    cv::Mat imgOriginal;        // input image
+    cv::Mat imgGrayscale;        // grayscale of input image
+    cv::Mat imgBlurred;            // intermediate blured image
+    cv::Mat imgCanny;            // Canny edge image
+    cv::Mat bitwiseOrMat;
+
+    cv::Point p1(0,0), p2(600,600);
+    cv::Scalar colorLine(0,255,0);
+
+    cv::cvtColor(imageMat, imgGrayscale, CV_BGR2GRAY);
+
+    cv::GaussianBlur(imgGrayscale,            // input image
+        imgBlurred,                            // output image
+        cv::Size(gaussian, gaussian),                        // smoothing window width and height in pixels
+        1.5);                                // sigma value, determines how much the image will be blurred
+
+    UIImage *destImage = MatToUIImage(imgBlurred);
+    if (destImage == nil) {
+        return reject(@"ENOENT", [NSString stringWithFormat:@"ENOENT: no such file, open '%@'", destImage], nil);
+    }
+    
+    NSString *fileType = [[outPath lowercaseString] pathExtension];
+    if ([fileType isEqualToString:@"png"]) {
+        [UIImagePNGRepresentation(destImage) writeToFile:outPath atomically:YES];
+    }
+    else if ([fileType isEqualToString:@"jpg"] || [fileType isEqualToString:@"jpeg"]) {
+        [UIImageJPEGRepresentation(destImage, 80) writeToFile:outPath atomically:YES];
+        //UIImageWriteToSavedPhotosAlbum(destImage, self, nil, nil);
+    }
+    else {
+        return reject(@"EINVAL", [NSString stringWithFormat:@"EINVAL: unsupported file type, write '%@'", fileType], nil);
+    }
+    
+    NSNumber *wid = [NSNumber numberWithInt:(int)destImage.size.width];
+    NSNumber *hei = [NSNumber numberWithInt:(int)destImage.size.height];
+    
+    NSDictionary *returnDict = @{ @"width" : wid, @"height" : hei,
+                                  @"uri" : outPath };
+    
+    resolve(returnDict);
+}
+
 @end
 
