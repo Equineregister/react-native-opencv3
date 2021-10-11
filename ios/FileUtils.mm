@@ -306,5 +306,40 @@
 
 }
 
++ (void)ROCombain:(NSString*)firstImage secondImage:(NSString*)secondImage outPath:(NSString*)outPath resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject {
+    UIImage *firstImageMat = [UIImage imageWithContentsOfFile:firstImage];
+    UIImage *secondImageMat = [UIImage imageWithContentsOfFile:secondImage];
+
+    Mat resizedMat;
+    resize(secondImageMat, resizedMat, Size(170, 510), INTER_LINEAR);
+
+    Mat whiteBG(firstImageMat.cols, firstImageMat.rows, CV_8UC3, Scalar(255, 255, 255));
+    float xOffset = (firstImageMat.cols / 2) - (resizedMat.cols / 2);
+    float yOffset = (float) ((firstImageMat.rows / 2) - (resizedMat.rows / 2.5));
+
+    firstImageMat.copyTo(whiteBG);
+    resizedMat.copyTo(whiteBG(Rect(xOffset, yOffset, resizedMat.cols, resizedMat.rows)));
+
+    UIImage *destImage = MatToUIImage(cropped_image);
+    if (destImage == nil) {
+        return reject(@"ENOENT", [NSString stringWithFormat:@"ENOENT: no such file, open '%@'", destImage], nil);
+    }
+
+    NSString *fileType = [[outPath lowercaseString] pathExtension];
+    if ([fileType isEqualToString:@"png"]) {
+        [UIImagePNGRepresentation(destImage) writeToFile:outPath atomically:YES];
+    }
+    else if ([fileType isEqualToString:@"jpg"] || [fileType isEqualToString:@"jpeg"]) {
+        [UIImageJPEGRepresentation(destImage, 80) writeToFile:outPath atomically:YES];
+    }
+    else {
+        return reject(@"EINVAL", [NSString stringWithFormat:@"EINVAL: unsupported file type, write '%@'", fileType], nil);
+    }
+
+    NSDictionary *returnDict = @{ @"uri" : outPath };
+    
+    resolve(returnDict);
+}
+
 @end
 
