@@ -50,6 +50,48 @@ RCT_EXPORT_METHOD(demoOpencvMethod:(NSDictionary*)src outPath:(NSString*)outPath
     [FileUtils demoOpencvMethod:inputMatWrapper outPath:outPath resolver:resolve rejecter:reject];
 }
 
+RCT_EXPORT_METHOD(ROGaussianBlur:(NSDictionary*)src outPath:(NSString*)outPath gaussian:(int)gaussian resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject) {
+    if (outPath == nil || outPath == (NSString*)NSNull.null || [outPath isEqualToString:@""]) {
+        return reject(@"EINVAL", [NSString stringWithFormat:@"EINVAL: invalid parameter, param '%@'", outPath], nil);
+    }
+    
+    NSNumber *srcMatNum = [src valueForKey:@"matIndex"];
+    int matIndex = (int)[srcMatNum integerValue];
+    
+    MatWrapper *inputMatWrapper = [((MatManager*)MatManager.sharedMgr).mats objectAtIndex:matIndex];
+    [FileUtils ROGaussianBlur:inputMatWrapper outPath:outPath gaussian:gaussian resolver:resolve rejecter:reject];
+}
+
+RCT_EXPORT_METHOD(ROCanny:(NSDictionary*)src bluredSrc:(NSDictionary*)bluredSrc outPath:(NSString*)outPath cannyPath:(NSString*)cannyPath min:(int)min max:(int)max resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
+{
+    if (outPath == nil || outPath == (NSString*)NSNull.null || [outPath isEqualToString:@""]) {
+        return reject(@"EINVAL", [NSString stringWithFormat:@"EINVAL: invalid parameter, param '%@'", outPath], nil);
+    }
+
+    if (cannyPath == nil || cannyPath == (NSString*)NSNull.null || [cannyPath isEqualToString:@""]) {
+        return reject(@"EINVAL", [NSString stringWithFormat:@"EINVAL: invalid parameter, param '%@'", cannyPath], nil);
+    }
+    
+    NSNumber *srcMatNum = [src valueForKey:@"matIndex"];
+    int matIndex = (int)[srcMatNum integerValue];
+    MatWrapper *inputMatWrapper = [((MatManager*)MatManager.sharedMgr).mats objectAtIndex:matIndex];
+
+    NSNumber *srcMatCannyNum = [bluredSrc valueForKey:@"matIndex"];
+    int cannyMatIndex = (int)[srcMatCannyNum integerValue];
+    MatWrapper *inputCannyMatWrapper = [((MatManager*)MatManager.sharedMgr).mats objectAtIndex:cannyMatIndex];
+    
+    //Mat inputMat = [MatManager.sharedMgr matAtIndex:matIndex];
+    [FileUtils ROCanny:inputMatWrapper bluredImage:inputCannyMatWrapper outPath:outPath cannyPath:cannyPath min:min max:max resolver:resolve rejecter:reject];
+}
+
+RCT_EXPORT_METHOD(ROCrop:(NSString*)imagePath outPath:(NSString*)outPath x:(int)x y:(int)y width:(int)width height:(int)height resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject) {
+    [FileUtils ROCrop:imagePath outPath:outPath x:x y:y width:width height:height resolver:resolve rejecter:reject];
+}
+
+RCT_EXPORT_METHOD(ROCombain:(NSString*)firstImage secondImage:(NSString*)secondImage outPath:(NSString*)outPath resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject) {
+    [FileUtils ROCombain:firstImage secondImage:secondImage outPath:outPath resolver:resolve rejecter:reject];
+}
+
 RCT_EXPORT_METHOD(cvtColor:(NSDictionary*)src dstMat:(NSDictionary*)dst convColorCode:(int)convColorCode) {
 
     NSNumber *srcMatNum = [src valueForKey:@"matIndex"];
