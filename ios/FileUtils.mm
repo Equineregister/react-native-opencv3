@@ -255,5 +255,56 @@
     resolve(returnDict);
 }
 
++ (void)ROCrop:(NSString*)imagePath outPath:(NSString*)outPath x:(int)x y:(int)y width:(int)width height:(int)height resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject {
+    // Check input parameters validity
+    if (imagePath == nil || imagePath == (NSString*)NSNull.null || [imagePath isEqualToString:@""]) {
+        return reject(@"EINVAL", [NSString stringWithFormat:@"EINVAL: invalid parameter, param '%@'", imagePath], nil);
+    }
+    // make sure input exists and is not a directory and output not a dir
+    if (![[NSFileManager defaultManager] fileExistsAtPath: imagePath]) {
+        return reject(@"ENOENT", [NSString stringWithFormat:@"ENOENT: no such file, open '%@'", imagePath], nil);
+    }
+    BOOL isDir = NO;
+    if([[NSFileManager defaultManager] fileExistsAtPath:imagePath isDirectory:&isDir] && isDir) {
+        return reject(@"EISDIR", [NSString stringWithFormat:@"EISDIR: illegal operation on a directory, open '%@'", imagePath], nil);
+    }
+    
+    UIImage *sourceImage = [UIImage imageWithContentsOfFile:imagePath];
+    
+    if (sourceImage == nil) {
+        return reject(@"ENOENT", [NSString stringWithFormat:@"ENOENT: no such file, open '%@'", imagePath], nil);
+    }
+    
+    UIImage *normalizedImage = [FileUtils normalizeImage:sourceImage];
+    
+    Mat outputMat;
+    UIImageToMat(normalizedImage, outputMat);
+
+    Mat cropped_image = outputMat(Range(x,y), Range(width,height));
+
+
+    UIImage *destImage = MatToUIImage(cropped_image);
+    if (destImage == nil) {
+        return reject(@"ENOENT", [NSString stringWithFormat:@"ENOENT: no such file, open '%@'", destImage], nil);
+    }
+    
+    NSString *fileType = [[outPath lowercaseString] pathExtension];
+    if ([fileType isEqualToString:@"png"]) {
+        [UIImagePNGRepresentation(destImage) writeToFile:outPath atomically:YES];
+    }
+    else if ([fileType isEqualToString:@"jpg"] || [fileType isEqualToString:@"jpeg"]) {
+        [UIImageJPEGRepresentation(destImage, 80) writeToFile:outPath atomically:YES];
+        //UIImageWriteToSavedPhotosAlbum(destImage, self, nil, nil);
+    }
+    else {
+        return reject(@"EINVAL", [NSString stringWithFormat:@"EINVAL: unsupported file type, write '%@'", fileType], nil);
+    }
+
+    NSDictionary *returnDict = @{ @"uri" : outPath };
+    
+    resolve(returnDict);
+
+}
+
 @end
 
