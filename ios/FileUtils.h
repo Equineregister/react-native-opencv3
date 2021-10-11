@@ -27,5 +27,13 @@
 
 + (void)demoOpencvMethod:(MatWrapper*)inputMatWrapper outPath:(NSString*)outPath resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject;
 
++ (void)ROGaussianBlur:(MatWrapper*)inputMat outPath:(NSString*)outPath gaussian:(int)gaussian resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject;
+
++ (void)ROCanny:(MatWrapper*)originalImage bluredImage:(MatWrapper*)bluredImage outPath:(NSString*)outPath cannyPath:(NSString*)cannyPath min:(int)min max:(int)max resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject;
+
++ (void)ROCrop:(NSString*)imagePath outPath:(NSString*)outPath x:(int)x y:(int)y width:(int)width height:(int)height resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject;
+
++ (void)ROCombain:(NSString*)firstImage secondImage:(NSString*)secondImage outPath:(NSString*)outPath resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject;
+
 @end
 #endif /* FileUtils_h */
