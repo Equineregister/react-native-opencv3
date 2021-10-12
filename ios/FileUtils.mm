@@ -207,26 +207,22 @@
 }
 
 + (void)ROCanny:(MatWrapper*)originalImage bluredImage:(MatWrapper*)bluredImage outPath:(NSString*)outPath cannyPath:(NSString*)cannyPath min:(int)min max:(int)max resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject {
-    Mat inputMat = inputMatWrapper.myMat;
 
-    cv::Mat imgCanny;            // Canny edge image
+    Mat imgCanny;            // Canny edge image
 
     cv::Point p1(0,0), p2(600,600);
     cv::Scalar colorLine(0,255,0);
 
-    cv::Canny(bluredImage,            // input image
-        imgCanny,                    // output image
-        min,                        // low threshold
-        max);                        // high threshold
+    cv::Canny(bluredImage.myMat,imgCanny, min, max);
 
     std::vector<std::vector<cv::Point>> contours;
     std::vector<Vec4i> hierarchy;
     findContours(imgCanny, contours, hierarchy, RETR_TREE, CHAIN_APPROX_NONE);
-    drawContours(originalImage, contours, -1, Scalar(0, 255, 0), 3);
+    drawContours(originalImage.myMat, contours, -1, Scalar(0, 255, 0), 3);
 
     threshold(imgCanny,imgCanny, 1, 255, THRESH_BINARY_INV);
 
-    UIImage *destImage = MatToUIImage(originalImage);
+    UIImage *destImage = MatToUIImage(originalImage.myMat);
     UIImage *destCannyImage = MatToUIImage(imgCanny);
     if (destImage == nil) {
         return reject(@"ENOENT", [NSString stringWithFormat:@"ENOENT: no such file, open '%@'", destImage], nil);
@@ -307,20 +303,27 @@
 }
 
 + (void)ROCombain:(NSString*)firstImage secondImage:(NSString*)secondImage outPath:(NSString*)outPath resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject {
-    UIImage *firstImageMat = [UIImage imageWithContentsOfFile:firstImage];
-    UIImage *secondImageMat = [UIImage imageWithContentsOfFile:secondImage];
-
+    UIImage *firstImageUIMat = [UIImage imageWithContentsOfFile:firstImage];
+    UIImage *normalizedFirstImage = [FileUtils normalizeImage:firstImageUIMat];
+    Mat firstImageMat;
+    UIImageToMat(normalizedFirstImage, firstImageMat);
+    
+    UIImage *secondImageUIMat = [UIImage imageWithContentsOfFile:secondImage];
+    UIImage *normalizedSecondImage = [FileUtils normalizeImage:secondImageUIMat];
+    Mat secondImageMat;
+    UIImageToMat(normalizedSecondImage, secondImageMat);
+    
     Mat resizedMat;
-    resize(secondImageMat, resizedMat, Size(170, 510), INTER_LINEAR);
+    resize(secondImageMat, resizedMat, cv::Size(170, 510), INTER_LINEAR);
 
     Mat whiteBG(firstImageMat.cols, firstImageMat.rows, CV_8UC3, Scalar(255, 255, 255));
     float xOffset = (firstImageMat.cols / 2) - (resizedMat.cols / 2);
     float yOffset = (float) ((firstImageMat.rows / 2) - (resizedMat.rows / 2.5));
 
     firstImageMat.copyTo(whiteBG);
-    resizedMat.copyTo(whiteBG(Rect(xOffset, yOffset, resizedMat.cols, resizedMat.rows)));
+    resizedMat.copyTo(whiteBG(cv::Rect(xOffset, yOffset, resizedMat.cols, resizedMat.rows)));
 
-    UIImage *destImage = MatToUIImage(cropped_image);
+    UIImage *destImage = MatToUIImage(whiteBG);
     if (destImage == nil) {
         return reject(@"ENOENT", [NSString stringWithFormat:@"ENOENT: no such file, open '%@'", destImage], nil);
     }
