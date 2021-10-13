@@ -276,7 +276,7 @@
     Mat outputMat;
     UIImageToMat(normalizedImage, outputMat);
 
-    Mat cropped_image = outputMat(Range(x,y), Range(width,height));
+    Mat cropped_image = outputMat(cv::Rect(x,y,width,height));
 
 
     UIImage *destImage = MatToUIImage(cropped_image);
