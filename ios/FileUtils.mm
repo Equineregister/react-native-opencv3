@@ -10,6 +10,9 @@
 #import "CvCamera.h"
 #import "MatManager.h"
 #import <Foundation/Foundation.h>
+#include <iostream>
+#include <cstdlib>
+#include <cstring>
 
 @implementation FileUtils
 
@@ -162,25 +165,20 @@
 
 + (void)ROGaussianBlur:(MatWrapper*)inputMat outPath:(NSString*)outPath gaussian:(int)gaussian resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject {
     Mat imageMat = inputMat.myMat;
-    Mat backup = inputMat.myMat;
     
-    cv::Mat imgOriginal;        // input image
     cv::Mat imgGrayscale;        // grayscale of input image
     cv::Mat imgBlurred;            // intermediate blured image
-    cv::Mat imgCanny;            // Canny edge image
-    cv::Mat bitwiseOrMat;
-
-    cv::Point p1(0,0), p2(600,600);
-    cv::Scalar colorLine(0,255,0);
 
     cv::cvtColor(imageMat, imgGrayscale, CV_BGR2GRAY);
-
+    imageMat.release();
     cv::GaussianBlur(imgGrayscale,            // input image
         imgBlurred,                            // output image
         cv::Size(gaussian, gaussian),                        // smoothing window width and height in pixels
         1.5);                                // sigma value, determines how much the image will be blurred
 
     UIImage *destImage = MatToUIImage(imgBlurred);
+    imgGrayscale.release();
+    imgBlurred.release();
     if (destImage == nil) {
         return reject(@"ENOENT", [NSString stringWithFormat:@"ENOENT: no such file, open '%@'", destImage], nil);
     }
@@ -191,7 +189,6 @@
     }
     else if ([fileType isEqualToString:@"jpg"] || [fileType isEqualToString:@"jpeg"]) {
         [UIImageJPEGRepresentation(destImage, 80) writeToFile:outPath atomically:YES];
-        //UIImageWriteToSavedPhotosAlbum(destImage, self, nil, nil);
     }
     else {
         return reject(@"EINVAL", [NSString stringWithFormat:@"EINVAL: unsupported file type, write '%@'", fileType], nil);
@@ -204,26 +201,29 @@
                                   @"uri" : outPath };
     
     resolve(returnDict);
+    inputMat.myMat.deallocate();
 }
 
 + (void)ROCanny:(MatWrapper*)originalImage bluredImage:(MatWrapper*)bluredImage outPath:(NSString*)outPath cannyPath:(NSString*)cannyPath min:(int)min max:(int)max resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject {
 
     Mat imgCanny;            // Canny edge image
 
-    cv::Point p1(0,0), p2(600,600);
-    cv::Scalar colorLine(0,255,0);
-
     cv::Canny(bluredImage.myMat,imgCanny, min, max);
 
     std::vector<std::vector<cv::Point>> contours;
     std::vector<Vec4i> hierarchy;
     findContours(imgCanny, contours, hierarchy, RETR_TREE, CHAIN_APPROX_NONE);
+
     drawContours(originalImage.myMat, contours, -1, cv::Scalar(0, 0, 0, 255), 20);
+    // cleanup
+    std::vector<std::vector<cv::Point>>().swap(contours);
+    std::vector<Vec4i>().swap(hierarchy);
 
     threshold(imgCanny,imgCanny, 1, 255, THRESH_BINARY_INV);
 
     UIImage *destImage = MatToUIImage(originalImage.myMat);
     UIImage *destCannyImage = MatToUIImage(imgCanny);
+    imgCanny.release();
     if (destImage == nil) {
         return reject(@"ENOENT", [NSString stringWithFormat:@"ENOENT: no such file, open '%@'", destImage], nil);
     }
@@ -249,6 +249,8 @@
                                   @"uri" : outPath, @"cannyUri" : cannyPath };
     
     resolve(returnDict);
+    originalImage.myMat.deallocate();
+    bluredImage.myMat.deallocate();
 }
 
 + (void)ROCrop:(NSString*)imagePath outPath:(NSString*)outPath x:(int)x y:(int)y width:(int)width height:(int)height resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject {
@@ -265,7 +267,7 @@
         return reject(@"EISDIR", [NSString stringWithFormat:@"EISDIR: illegal operation on a directory, open '%@'", imagePath], nil);
     }
     
-    UIImage *sourceImage = [UIImage imageWithContentsOfFile:imagePath];
+     UIImage *sourceImage = [UIImage imageWithContentsOfFile:imagePath];
     
     if (sourceImage == nil) {
         return reject(@"ENOENT", [NSString stringWithFormat:@"ENOENT: no such file, open '%@'", imagePath], nil);
@@ -277,9 +279,10 @@
     UIImageToMat(normalizedImage, outputMat);
 
     Mat cropped_image = outputMat(cv::Rect(x,y,width,height));
-
+    outputMat.release();
 
     UIImage *destImage = MatToUIImage(cropped_image);
+    cropped_image.release();
     if (destImage == nil) {
         return reject(@"ENOENT", [NSString stringWithFormat:@"ENOENT: no such file, open '%@'", destImage], nil);
     }
@@ -315,6 +318,8 @@
     
     Mat resizedMat;
     resize(secondImageMat, resizedMat, cv::Size(170, 510), INTER_LINEAR);
+    // cleanup
+    secondImageMat.release();
 
     Mat whiteBG(firstImageMat.cols, firstImageMat.rows, CV_8UC3, Scalar(255, 255, 255));
     float xOffset = (firstImageMat.cols / 2) - (resizedMat.cols / 2);
@@ -322,6 +327,10 @@
 
     firstImageMat.copyTo(whiteBG);
     resizedMat.copyTo(whiteBG(cv::Rect(xOffset, yOffset, resizedMat.cols, resizedMat.rows)));
+
+    // cleanup
+    firstImageMat.release();
+    resizedMat.release();
 
     UIImage *destImage = MatToUIImage(whiteBG);
     if (destImage == nil) {
