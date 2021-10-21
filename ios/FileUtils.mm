@@ -218,7 +218,7 @@
     std::vector<std::vector<cv::Point>> contours;
     std::vector<Vec4i> hierarchy;
     findContours(imgCanny, contours, hierarchy, RETR_TREE, CHAIN_APPROX_NONE);
-    drawContours(originalImage.myMat, contours, -1, Scalar(0, 255, 0), 10);
+    drawContours(originalImage.myMat, contours, -1, cv::Scalar(0, 0, 0, 255), 20);
 
     threshold(imgCanny,imgCanny, 1, 255, THRESH_BINARY_INV);
 
